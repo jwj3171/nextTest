@@ -9,17 +9,41 @@ import Container from "@/components/Container";
 import Head from "next/head";
 import Image from "next/image";
 
-export default function Product() {
-  const [product, setProduct] = useState();
+export const getStaticPaths = async () => {
+  const res = await axios.get("/products");
+  const products = res.data.results;
+  const paths = products.map((product) => {
+    return {
+      params: {
+        id: String(product.id),
+      },
+    };
+  });
+  return {
+    paths,
+    fallback: true, // false or "blocking" //true 파라미터에 없으면  getStaticProps 에서 만들어서 화면 보여줌-> 로딩처리가필요함
+  };
+};
+
+export const getStaticProps = async (context) => {
+  console.log("@@@ items_id getStaticProps실행중");
+  const productId = context.params["id"]; //getStaticPaths 에서 매핑된 아이디만 가능
+  let product;
+
+  try {
+    const res = await axios.get(`/products/${productId}`);
+    product = res.data;
+  } catch {
+    return { notFound: true }; // items/bad-id 같은 이상한 id에도 에러가 아닌 404페이지로 보냄
+  }
+
+  return { props: { product } };
+};
+
+export default function Product({ product }) {
   const [sizeReviews, setSizeReviews] = useState([]);
   const router = useRouter();
   const { id } = router.query;
-
-  async function getProduct(targetId) {
-    const res = await axios.get(`/products/${targetId}`);
-    const nextProduct = res.data;
-    setProduct(nextProduct);
-  }
 
   async function getSizeReviews(targetId) {
     const res = await axios.get(`/size_reviews/?product_id=${targetId}`);
@@ -29,12 +53,12 @@ export default function Product() {
 
   useEffect(() => {
     if (!id) return;
-
-    getProduct(id);
     getSizeReviews(id);
   }, [id]);
 
-  if (!product) return null;
+  //getStaticPaths fallback:true일때
+  //로딩필요 - 데이터 없어서 불러오는동안 로딩처리 - 로딩스피너 자리
+  if (!product) return <div>로딩중입니다....</div>;
 
   return (
     <>

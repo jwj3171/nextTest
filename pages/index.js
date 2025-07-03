@@ -6,22 +6,17 @@ import styles from "@/styles/Home.module.css";
 import Head from "next/head";
 import { useEffect, useState } from "react";
 
-export default function Home() {
-  const [products, setProducts] = useState([]);
+export const getStaticProps = async (context) => {
+  console.log("@@@@getStaticProps실행중");
+  const res = await axios.get("/products");
+  const products = res.data.results;
 
-  async function getProducts() {
-    const res = await axios.get("/products");
-    const nextProducts = res.data.results;
-    setProducts(nextProducts);
-  }
+  return { props: { products } };
+};
 
-  useEffect(() => {
-    getProducts();
-  }, []);
-
+export default function Home({ products }) {
   return (
     <>
-      
       <SearchForm />
       <ProductList className={styles.products} products={products} />
     </>
